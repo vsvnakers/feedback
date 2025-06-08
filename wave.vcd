@@ -1,0 +1,126 @@
+$date
+	Wed Jun  4 00:32:06 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module feedback_tb $end
+$var wire 32 ! weight_out [31:0] $end
+$var wire 64 " state_out [63:0] $end
+$var parameter 32 # CLAUSE_NUM $end
+$var parameter 32 $ LITERAL_NUM $end
+$var parameter 32 % STATE_WIDTH $end
+$var parameter 32 & WEIGHT_WIDTH $end
+$var reg 8 ' actions [7:0] $end
+$var reg 1 ( clk $end
+$var reg 4 ) conjunction_result [3:0] $end
+$var reg 1 * en $end
+$var reg 8 + literals [7:0] $end
+$var reg 1 , rst_n $end
+$var reg 64 - state_in [63:0] $end
+$var reg 32 . weight_in [31:0] $end
+$scope module uut $end
+$var wire 8 / actions [7:0] $end
+$var wire 1 ( clk $end
+$var wire 4 0 conjunction_result [3:0] $end
+$var wire 1 * en $end
+$var wire 8 1 literals [7:0] $end
+$var wire 1 , rst_n $end
+$var wire 64 2 state_in [63:0] $end
+$var wire 32 3 weight_in [31:0] $end
+$var parameter 32 4 CLAUSE_NUM $end
+$var parameter 32 5 LFSR_WIDTH $end
+$var parameter 32 6 LITERAL_NUM $end
+$var parameter 32 7 STATE_WIDTH $end
+$var parameter 32 8 WEIGHT_WIDTH $end
+$var reg 8 9 curr_state [7:0] $end
+$var reg 8 : curr_weight [7:0] $end
+$var reg 64 ; state_out [63:0] $end
+$var reg 32 < weight_out [31:0] $end
+$var integer 32 = i [31:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+b1000 8
+b1000 7
+b1000 6
+b11000 5
+b100 4
+b1000 &
+b1000 %
+b1000 $
+b100 #
+$end
+#0
+$dumpvars
+bx =
+b0 <
+b0 ;
+bx :
+bx 9
+b0 3
+b0 2
+b0 1
+b0 0
+b0 /
+b0 .
+b0 -
+0,
+b0 +
+0*
+b0 )
+0(
+b0 '
+b0 "
+b0 !
+$end
+#5
+1(
+#10
+0(
+1,
+#15
+1(
+#20
+0(
+b100000010000000110000010000000101000001100000011100001000 -
+b100000010000000110000010000000101000001100000011100001000 2
+b1000000100000001100000100 .
+b1000000100000001100000100 3
+b10101010 +
+b10101010 1
+b11001100 '
+b11001100 /
+b1010 )
+b1010 0
+1*
+#25
+b10000000100000010000000100 !
+b10000000100000010000000100 <
+b1000000010000000110000001100000110000001100000011100000111 "
+b1000000010000000110000001100000110000001100000011100000111 ;
+b10 :
+b10 9
+b100 =
+1(
+#30
+0(
+#35
+b10 :
+b10 9
+b100 =
+1(
+#40
+0(
+#45
+b10 :
+b10 9
+b100 =
+1(
+#50
+0(
