@@ -1,6 +1,3 @@
-当然可以！现在我们来**全面、详细地解析**你编写的 `feedback.v` 模块的功能、运行原理、接口含义，以及它在整个 Tsetlin Machine 中的职责。
-
----
 
 ## 🧠 总体目标：`feedback.v` 是干什么的？
 
@@ -18,140 +15,96 @@
 
 也就是说，`feedback.v` 是训练逻辑的一部分，**不参与推理，而只在学习/训练时使用**。
 
+
+## ✅ 使用的仿真环境组成：
+
+### 1. **iverilog**
+
+* **作用：** 编译 Verilog 代码（包括模块和 testbench）
+* **命令：** `iverilog -g2012 -o sim_feedback -s feedback_tb *.v`
+* **说明：** 支持 Verilog-2005/2012，大多数 FPGA 项目都能在这里先验证逻辑正确性
+
 ---
 
-## 🔌 接口详解：输入输出信号含义
+### 2. **vvp**
 
-```verilog
-module feedback #(
-    parameter CLAUSE_NUM = 128,
-    parameter WEIGHT_WIDTH = 8,
-    parameter LFSR_WIDTH = 24,
-    parameter LITERAL_NUM = 272,
-    parameter STATE_WIDTH = 8
-)(
-    input clk,
-    input rst_n,
+* **作用：** 运行由 `iverilog` 编译出来的 `.out` 仿真文件（如 `sim_feedback`）
+* **命令：** `vvp sim_feedback`
+* **说明：** 会输出 `$display`、`$monitor` 的内容，并生成波形文件（若有 `$dumpfile`）
+
+---
+
+### 3. **GTKWave**（可选）
+
+* **作用：** 查看 `.vcd` 波形文件
+* **命令：** `gtkwave wave.vcd`
+* **说明：** 可视化仿真信号变化，非常适合调试 TA 状态和 Clause 权重等时序行为
+
+---
+
+### 4. **Makefile**（你的工程中）
+
+* **作用：** 自动调用上述命令，简化运行过程
+* **支持命令：**
+
+  * `make TOP=feedback run`（编译+运行）
+  * `make wave`（打开波形）
+  * `make clean`（清理中间文件）
+
+---
+
+### ✅ 总结：你正在使用的仿真环境是
+
+> **Icarus Verilog + vvp + GTKWave + Makefile 自动化调度**
+
+它是一个轻量、开源、适合学习与验证的 Verilog 仿真组合。如果你要移植到 ModelSim 或 Vivado 仿真环境，我也可以给出适配建议。是否需要？
+
+
+## ✅ 如何使用这个 `Makefile`
+
+### 1. 编译并运行测试文件
+
+你只需要知道你模块的名字（比如模块叫 `feedback.v`，测试文件叫 `feedback_tb.v`），然后执行下面的命令：
+
+```bash
+make TOP=feedback run
 ```
 
-基本控制信号，常规时钟 + 异步复位。
+> 它会自动帮你编译所有 `.v` 文件，然后运行 `feedback_tb` 测试模块。
 
 ---
 
-### 🧠 核心输入信号
+### 2. 打开波形图（如果生成了 wave.vcd）
 
-#### 1. `conjunction_result[CLAUSE_NUM-1:0]`
+如果你在 testbench 中用了 `$dumpfile("wave.vcd");`，你可以运行：
 
-* 每个 clause 的“合取”结果（是否匹配成功输入样本）
-* 值为 1 表示该 clause 对输入样本成立
-* 用于决定是否更新该 clause 的权重
-
-#### 2. `actions[LITERAL_NUM-1:0]`
-
-* 每个 TA 的动作（是否为 include）
-* 通常由当前状态值映射决定（高于256表示 include）
-* 在硬件中这里是一个外部输入，0 表示 exclude，1 表示 include
-
-#### 3. `literals[LITERAL_NUM-1:0]`
-
-* 输入样本中每个 literal（字面量）的实际值
-* 用于判断是否应该“奖励”某个 TA（比如 include + literal = 1）
-
-#### 4. `en`
-
-* 总使能信号，只有在 en=1 时才进行状态/权重更新
-
----
-
-### 📥 输入状态数据（从外部加载当前状态）
-
-#### 5. `state_in[LITERAL_NUM * STATE_WIDTH - 1:0]`
-
-* 每个 TA 当前的状态（8位）
-* 每个 clause 有多个 TA，这些状态用于决定 include/exclude
-
-#### 6. `weight_in[CLAUSE_NUM * WEIGHT_WIDTH - 1:0]`
-
-* 每个 clause 的当前权重（通常是有符号整型）
-* 决定该 clause 对预测结果的投票权重
-
----
-
-### 📤 输出结果（状态更新后输出）
-
-#### 7. `state_out`：更新后的所有 TA 状态
-
-#### 8. `weight_out`：更新后的所有 clause 权重
-
----
-
-## 🔁 模块运行逻辑：核心处理流程
-
-### Step 1️⃣：更新 TA 状态（Type I Feedback）
-
-对于每一个字面 literal（共 272 个）：
-
-```verilog
-curr_state = state_in[i];  // 获取当前状态
-if (actions[i] == 1) begin
-    if (literals[i] == 1 && curr_state < MAX_STATE)
-        curr_state = curr_state + 1;
-end else begin
-    if (literals[i] == 0 && curr_state > 0)
-        curr_state = curr_state - 1;
-end
+```bash
+make wave
 ```
 
-**意图：**
-
-* 如果是 `include`，且 literal 出现，就加强它（+1）
-* 如果是 `exclude`，且 literal 没出现，也加强它（-1）
-
-这模拟了 Tsetlin Automaton 的学习过程。
+> 它会打开 GTKWave 查看波形。
 
 ---
 
-### Step 2️⃣：更新权重（Type I 权重反馈）
+### 3. 清理编译后的临时文件
 
-对于每一个 clause（共 128 个）：
+运行：
 
-```verilog
-if (conjunction_result[i]) begin
-    if (curr_weight 为正)
-        curr_weight += 1;
-    else
-        curr_weight -= 1;
-end
+```bash
+make clean
 ```
 
-只有当该 clause 匹配了输入样本，才进行权重更新。
+> 会删除所有 `sim_*` 和 `.vcd` 等临时文件，让工程目录干净。
 
 ---
 
-## 📌 总结：你实现的功能
+### 4. 如果你有多个模块要测试
 
-| 项目     | 描述                                                    |
-| ------ | ----------------------------------------------------- |
-| TA状态更新 | 对每个 literal 的 TA 根据 include/exclude 和 literal 值进行状态调整 |
-| 权重更新   | 对每个 clause，如果合取为 1，则根据当前权重方向微调                        |
-| 可配置参数  | 支持参数化 TA数量、状态宽度、字句数量、权重位宽                             |
-| 时钟控制   | 全同步逻辑，en 控制是否更新                                       |
+比如你有 `d_prob.v` 和 `d_prob_tb.v`：
 
----
+```bash
+make TOP=d_prob run
+```
 
-## ✅ 你已经完成的是：
+> 它会自动找 `d_prob_tb.v` 来运行测试。
 
-* Type I Feedback 的完整 Verilog 实现
-* 正确处理了 TA 状态 + clause 权重更新逻辑
-* 与 Python 仿真模型保持一致
-* 已在 testbench 中成功验证
-
----
-
-如果你理解了这一套流程，你已经掌握了 Tsetlin Machine 的硬件核心机制之一。如果你希望继续往下走，我们可以：
-
-* 实现 **Type II Feedback（负类惩罚机制）**
-* 或者做 **多个反馈类型整合（统一接口）**
-* 或者将多个 clause 封装成子模块，构建顶层系统
-
-是否继续深入？我可以帮你规划下一步开发路线。
